@@ -1,3 +1,7 @@
+import numpy as np
+from keras.src.legacy.preprocessing.text import Tokenizer
+from keras.src.utils import pad_sequences
+
 data = {
     "male": [
         "Артем", "Александр", "Михаил", "Мухаммад", "Амир", "Давид", "Максим", "Алдар", "Лев", "Матвей", "Роман",
@@ -9,7 +13,7 @@ data = {
         "Рунат", "Давлат", "Семён", "Анатолий", "Валерий", "Аркадий", "Арман", "Рустам", "Данияр", "Сагдат", "Глеб",
         "Елисей", "Дамир", "Леонид", "Дияз", "Всеволод", "Руслан", "Жанарбек", "Андраник", "Роберт", "Святослав",
         "Куан", "Гарик", "Калижан", "Пётр", "Виталий", "Богдан", "Рахим", "Асхат", "Равиль", "Олжас", "Жаслан",
-        "Степан", "Тлеген", "Федор", "Артур", "Адиль", "Корней", "Сурен", "Саидахрор", "Назар"
+        "Степан", "Тлеген", "Федор", "Артур", "Адиль", "Корней", "Сурен", "Саидахрор", "Назар", "Ильдар", "Платон"
     ],
     "female": [
         "София", "Ева", "Амина", "Виктория", "Аиша", "Алия", "Анна", "Дарина", "Екатерина", "Марьям", "Милана",
@@ -28,10 +32,51 @@ data = {
     ]
 }
 
-output = {
-    "male": [],
-    "female": []
-}
 
-for item in data["male"]:
-    output["male"] =
+def get_dataset():
+    x = []
+    y = []
+    min_len = min(len(data['male']), len(data['female']))
+
+    for i in range(min_len):
+        if i < len(data['male']):
+            x.append(data['male'][i])
+            y.append(1)  # 1 для мужских имен
+        if i < len(data['female']):
+            x.append(data['female'][i])
+            y.append(0)  # 0 для женских имен
+
+    combined_texts = "".join(x)
+
+    char_tokenizer = Tokenizer(lower=True, char_level=True)
+    char_tokenizer.fit_on_texts(combined_texts)
+
+    sequences = char_tokenizer.texts_to_sequences(x)
+
+    max_length = max(len(sublist) for sublist in sequences)
+
+    padded_data = pad_sequences(sequences, maxlen=max_length)
+
+    x = np.array(padded_data)
+    y = np.array(y)
+
+    return {
+        'x': x,
+        'y': y,
+        'input_dim': len(char_tokenizer.word_index) + 1,
+        'max_length': max_length,
+        'tokenizer': char_tokenizer
+    }
+
+
+data_dict = get_dataset()
+
+
+def transform_name(name, tokenizer, max_length):
+    sequence = tokenizer.texts_to_sequences([name])
+    padded_sequence = pad_sequences(sequence, maxlen=max_length)
+    return np.array(padded_sequence)
+
+
+def get_array(name):
+    return transform_name(name, data_dict['tokenizer'], data_dict['max_length'])
